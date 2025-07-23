@@ -2,56 +2,65 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Global Football Matrix", layout="wide")
+st.set_page_config(page_title="Football Matrix Clean View", layout="wide")
 
 df = pd.read_excel("football_betting_matrix_GLOBAL_FULL_ALL_REGIONS.xlsx", sheet_name="League Data")
 
-# Mapping: abbreviazione -> (nome completo, sezione)
-COLUMN_SECTIONS = {
-    "Region": ("Reg", "Region"),
-    "Country": ("Ctry", "Region"),
-    "Effective Time": ("EffT", "Style"),
-    "Style of Play": ("Style", "Style"),
-    "Game Fragmentation": ("Frag", "Style"),
-    "End-game Behavior": ("EndG", "Style"),
-    "Over 2nd Half Propensity": ("Ov2H", "Final"),
-    "Strong Start 1H": ("1HSt", "Final"),
-    "Push to Extend Lead": ("Push+", "Final"),
-    "Late Corners Tendency": ("LCorn", "Final"),
-    "Notes": ("Notes", "Tactic"),
-    "Inverted Wingers Usage": ("IW", "Tactic"),
-    "Hidden Tactical Behaviors": ("TactX", "Tactic"),
-    "Betting Profile": ("BetP", "Profile")
+# Mapping abbreviazioni
+COLUMN_ABBR = {
+    "Region": "Reg",
+    "Country": "Ctry",
+    "League": "Lg",
+    "Effective Time": "EffT",
+    "Style of Play": "Style",
+    "Game Fragmentation": "Frag",
+    "End-game Behavior": "EndG",
+    "Over 2nd Half Propensity": "Ov2H",
+    "Strong Start 1H": "1HSt",
+    "Push to Extend Lead": "Push+",
+    "Late Corners Tendency": "LCorn",
+    "Notes": "Notes",
+    "Inverted Wingers Usage": "IW",
+    "Hidden Tactical Behaviors": "TactX",
+    "Betting Profile": "BetP"
 }
 
-# Ordine e separazione tra sezioni
-SECTION_ORDER = ["Region", "Style", "Final", "Tactic", "Profile"]
-section_columns = {s: [] for s in SECTION_ORDER}
-for full_name, (abbr, section) in COLUMN_SECTIONS.items():
-    if full_name in df.columns:
-        section_columns[section].append((full_name, abbr))
+# Rinominare solo se la colonna esiste
+abbr_rename = {k: v for k, v in COLUMN_ABBR.items() if k in df.columns}
+df = df.rename(columns=abbr_rename)
 
-# Costruzione DataFrame abbreviato + spaziature tra sezioni
-columns_ordered = []
-col_tooltips = {}
-for section in SECTION_ORDER:
-    if section_columns[section]:
-        if columns_ordered:  # se non è la prima sezione, aggiungi colonna vuota separatrice
-            spacer = f"__{section}__"
-            df[spacer] = ""
-            columns_ordered.append(spacer)
-        for full, abbr in section_columns[section]:
-            df[abbr] = df[full]
-            columns_ordered.append(abbr)
-            col_tooltips[abbr] = full
+st.title("📊 Football Matrix Explorer")
+st.caption("Filtra per nazione, campionato o strategia. Tutte le abbreviazioni hanno descrizioni al passaggio del mouse.")
 
-# Visualizzazione
-st.title("📊 Global Football Matrix")
-st.caption("Tutte le metriche sono in inglese. Passa il mouse sui nomi per leggere la descrizione.")
+# Filtri
+col1, col2, col3 = st.columns(3)
+with col1:
+    selected_region = st.multiselect("🌍 Region", sorted(df["Reg"].dropna().unique()), default=None)
+with col2:
+    selected_country = st.multiselect("🇨🇴 Country", sorted(df["Ctry"].dropna().unique()), default=None)
+with col3:
+    selected_league = st.multiselect("🏆 League", sorted(df["Lg"].dropna().unique()), default=None)
 
-# Mostra la tabella
-st.dataframe(df[columns_ordered], use_container_width=True)
+# Applica filtri
+if selected_region:
+    df = df[df["Reg"].isin(selected_region)]
+if selected_country:
+    df = df[df["Ctry"].isin(selected_country)]
+if selected_league:
+    df = df[df["Lg"].isin(selected_league)]
 
-# Download
-csv = df[columns_ordered].to_csv(index=False).encode("utf-8")
-st.download_button("📥 Download CSV", data=csv, file_name="football_matrix_filtered.csv", mime="text/csv")
+# Ricerca testuale su tutte le colonne
+search = st.text_input("🔍 Search in table (partial match, any column)")
+if search:
+    df = df[df.apply(lambda row: row.astype(str).str.contains(search, case=False).any(), axis=1)]
+
+# Selettore colonne da visualizzare
+available_cols = df.columns.tolist()
+selected_cols = st.multiselect("📌 Columns to display", available_cols, default=available_cols)
+
+# Visualizza tabella
+st.dataframe(df[selected_cols], use_container_width=True)
+
+# Download CSV
+csv = df[selected_cols].to_csv(index=False).encode("utf-8")
+st.download_button("⬇️ Download CSV", data=csv, file_name="football_matrix_filtered.csv", mime="text/csv")
