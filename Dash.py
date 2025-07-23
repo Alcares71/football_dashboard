@@ -50,7 +50,8 @@ df_short = filtered_df.rename(columns=col_map)
 
 # Selezione colonne da visualizzare
 available_cols = list(col_map.values())
-default_cols = ["R", "C", "O2H", "FS1H", "LET", "LC"]
+default_all = ["R", "C", "O2H", "FS1H", "LET", "LC"]
+default_cols = [col for col in default_all if col in available_cols]
 selected_cols = st.sidebar.multiselect("📊 Columns to display", available_cols, default=default_cols)
 
 df_short = df_short[[col for col in selected_cols if col in df_short.columns]]
