@@ -55,7 +55,8 @@ available_cols = df.columns.tolist()
 selected_cols = st.multiselect("📌 Columns to display", available_cols, default=available_cols)
 
 # Configura tooltip
-col_cfg = {col: st.column_config.ColumnConfig(label=col, help=TOOLTIPS.get(col, "")) for col in selected_cols}
+from streamlit.elements.column_config import ColumnConfig
+col_cfg = {col: ColumnConfig(label=col, help=TOOLTIPS.get(col, "")) for col in selected_cols}
 
 # Mostra tabella
 st.data_editor(
