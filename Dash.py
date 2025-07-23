@@ -23,7 +23,7 @@ COLUMN_ABBR = {
     "Hidden Tactical Behaviors": "TactX",
     "Betting Profile": "BetP"
 }
-
+st.write("✅ Streamlit version:", st.__version__)
 abbr_rename = {k: v for k, v in COLUMN_ABBR.items() if k in df.columns}
 df = df.rename(columns=abbr_rename)
 
