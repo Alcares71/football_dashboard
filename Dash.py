@@ -5,8 +5,14 @@ import pandas as pd
 st.set_page_config(page_title="Football Betting Matrix", layout="wide")
 st.title("🏟️ Global Football Betting Matrix Dashboard")
 
+# Carica il file
 df = pd.read_excel("football_betting_matrix_GLOBAL_FULL_ALL_REGIONS.xlsx", sheet_name="League Data")
+df = df.dropna(subset=["Region", "Country"])
 
+# Colonne disponibili nel file
+all_columns = df.columns.tolist()
+
+# Dizionario abbreviazioni + tooltip per alcune colonne
 detailed_labels = {
     "Region": ("R", "Region"),
     "Country": ("C", "Country"),
@@ -19,7 +25,7 @@ detailed_labels = {
     "Lead Extension Tendency": ("LET", "Teams' tendency to extend their lead"),
     "Late Corners": ("LC", "High number of corners in final minutes"),
     "Wing Play Style": ("WPS", "Tendency to use wing play"),
-    "Inverted Winger Usage": ("IWU", "Use of inverted wingers (left-footed on right, etc.)"),
+    "Inverted Winger Usage": ("IWU", "Use of inverted wingers"),
     "Typical Width": ("TW", "Tactical width of play"),
     "Pitch Size Note": ("PSN", "Field size and structural considerations"),
     "Aerial Strength": ("AS", "Aerial duel strength / heading ability"),
@@ -29,40 +35,46 @@ detailed_labels = {
     "Notes": ("N", "Additional strategic or observational notes")
 }
 
-df = df.dropna(subset=["Region", "Country"])
+# Mappatura colonne esistenti con abbreviazioni
+col_map = {k: v[0] for k, v in detailed_labels.items() if k in all_columns}
+tooltip_map = {v[0]: v[1] for k, v in detailed_labels.items() if k in all_columns}
 
-st.sidebar.header("🔍 Filters")
-region = st.sidebar.multiselect("Region", sorted(df["Region"].unique()))
-country = st.sidebar.multiselect("Country", sorted(df["Country"].unique()))
-over2h = st.sidebar.selectbox("Over 2nd Half", ["All"] + sorted(df["Over 2nd Half Propensity"].dropna().unique()))
+# Applica abbreviazioni dove possibile
+df_short = df.rename(columns=col_map)
 
-filtered_df = df.copy()
+# Filtro colonne ON TOP
+st.markdown("### 📊 Select Columns to Display")
+selectable_cols = list(df_short.columns)
+default_cols = selectable_cols[:10]  # mostra le prime 10 come default
+selected_cols = st.multiselect("Choose columns", selectable_cols, default=default_cols)
+
+# Filtro laterale
+with st.sidebar:
+    st.header("🔍 Filters")
+    region = st.multiselect("Region", sorted(df["Region"].unique()))
+    country = st.multiselect("Country", sorted(df["Country"].unique()))
+    over2h = st.selectbox("Over 2nd Half", ["All"] + sorted(df["Over 2nd Half Propensity"].dropna().unique()) if "Over 2nd Half Propensity" in df.columns else ["All"])
+
+filtered_df = df_short.copy()
 if region:
     filtered_df = filtered_df[filtered_df["Region"].isin(region)]
 if country:
     filtered_df = filtered_df[filtered_df["Country"].isin(country)]
-if over2h != "All":
-    filtered_df = filtered_df[filtered_df["Over 2nd Half Propensity"] == over2h]
+if over2h != "All" and "O2H" in filtered_df.columns:
+    filtered_df = filtered_df[filtered_df["O2H"] == over2h]
 
-col_map = {k: v[0] for k, v in detailed_labels.items() if k in filtered_df.columns}
-tooltip_map = {v[0]: v[1] for k, v in detailed_labels.items() if k in filtered_df.columns}
-df_short = filtered_df.rename(columns=col_map)
+filtered_df = filtered_df[selected_cols]
 
-# Selezione colonne da visualizzare
-available_cols = list(col_map.values())
-default_all = ["R", "C", "O2H", "FS1H", "LET", "LC"]
-default_cols = [col for col in default_all if col in available_cols]
-selected_cols = st.multiselect("📊 Columns to display", available_cols, default=default_cols)
-
-df_short = df_short[[col for col in selected_cols if col in df_short.columns]]
-
+# Tooltip HTML
 def generate_html_table(df, tooltips):
     html = df.to_html(index=False, escape=False)
     for col in df.columns:
+        label = col
         tooltip = tooltips.get(col, "")
-        html = html.replace(f">{col}<", f'><abbr title="{tooltip}">{col}</abbr><')
+        html = html.replace(f">{label}<", f'><abbr title="{tooltip}">{label}</abbr><')
     return html
 
+# Style
 st.markdown('''
 <style>
     table { font-size: 13px; word-break: break-word; }
@@ -71,16 +83,18 @@ st.markdown('''
 </style>
 ''', unsafe_allow_html=True)
 
-st.markdown(f"### ✅ {len(df_short)} leagues found")
+st.markdown(f"### ✅ {len(filtered_df)} leagues found")
 
-if not df_short.empty:
-    html_table = generate_html_table(df_short, tooltip_map)
+if not filtered_df.empty:
+    html_table = generate_html_table(filtered_df, tooltip_map)
     st.markdown(html_table, unsafe_allow_html=True)
 else:
     st.warning("No data to display for selected filters.")
 
-st.download_button("Download Filtered Data", data=filtered_df[selected_cols].to_csv(index=False), file_name="filtered_betting_matrix.csv")
+# Download CSV
+st.download_button("Download Filtered Data", data=filtered_df.to_csv(index=False), file_name="filtered_betting_matrix.csv")
 
-if len(filtered_df) == 1 and "Betting Profile" in filtered_df.columns:
+# Profilo scommesse
+if len(filtered_df) == 1 and "BP" in filtered_df.columns:
     st.subheader("🎯 Betting Profile")
-    st.markdown(filtered_df.iloc[0]["Betting Profile"])
+    st.markdown(filtered_df.iloc[0]["BP"])
