@@ -11,7 +11,6 @@ df = pd.read_excel("football_betting_matrix_GLOBAL_FULL_ALL_REGIONS.xlsx", sheet
 st.sidebar.header("🔍 Filters")
 region = st.sidebar.multiselect("Region", sorted(df["Region"].unique()))
 country = st.sidebar.multiselect("Country", sorted(df["Country"].unique()))
-division = st.sidebar.multiselect("Division", sorted(df["Division"].unique()))
 over2h = st.sidebar.selectbox("Over 2nd Half Propensity", ["All", "Poor", "OK", "Good"])
 
 # Applica i filtri
