@@ -5,10 +5,8 @@ import pandas as pd
 st.set_page_config(page_title="Football Betting Matrix", layout="wide")
 st.title("🏟️ Global Football Betting Matrix Dashboard")
 
-# Carica il file Excel
 df = pd.read_excel("football_betting_matrix_GLOBAL_FULL_ALL_REGIONS.xlsx", sheet_name="League Data")
 
-# Dizionario colonne abbreviate + tooltip
 detailed_labels = {
     "Region": ("R", "Region"),
     "Country": ("C", "Country"),
@@ -31,14 +29,13 @@ detailed_labels = {
     "Notes": ("N", "Additional strategic or observational notes")
 }
 
-# Sidebar filtri
 df = df.dropna(subset=["Region", "Country"])
+
 st.sidebar.header("🔍 Filters")
 region = st.sidebar.multiselect("Region", sorted(df["Region"].unique()))
 country = st.sidebar.multiselect("Country", sorted(df["Country"].unique()))
 over2h = st.sidebar.selectbox("Over 2nd Half", ["All"] + sorted(df["Over 2nd Half Propensity"].dropna().unique()))
 
-# Applica filtri
 filtered_df = df.copy()
 if region:
     filtered_df = filtered_df[filtered_df["Region"].isin(region)]
@@ -47,13 +44,17 @@ if country:
 if over2h != "All":
     filtered_df = filtered_df[filtered_df["Over 2nd Half Propensity"] == over2h]
 
-# Applica abbreviazioni e ordina le colonne
 col_map = {k: v[0] for k, v in detailed_labels.items() if k in filtered_df.columns}
 tooltip_map = {v[0]: v[1] for k, v in detailed_labels.items() if k in filtered_df.columns}
-filtered_short = filtered_df.rename(columns=col_map)
-filtered_short = filtered_short[[col for col in col_map.values() if col in filtered_short.columns]]
+df_short = filtered_df.rename(columns=col_map)
 
-# Genera HTML con tooltip
+# Selezione colonne da visualizzare
+available_cols = list(col_map.values())
+default_cols = ["R", "C", "O2H", "FS1H", "LET", "LC"]
+selected_cols = st.sidebar.multiselect("📊 Columns to display", available_cols, default=default_cols)
+
+df_short = df_short[[col for col in selected_cols if col in df_short.columns]]
+
 def generate_html_table(df, tooltips):
     html = df.to_html(index=False, escape=False)
     for col in df.columns:
@@ -61,27 +62,24 @@ def generate_html_table(df, tooltips):
         html = html.replace(f">{col}<", f'><abbr title="{tooltip}">{col}</abbr><')
     return html
 
-# Styling
 st.markdown('''
 <style>
-    table { font-size: 13px; }
+    table { font-size: 13px; word-break: break-word; }
     abbr { text-decoration: none; border-bottom: 1px dotted #888; cursor: help; }
+    .block-container { padding: 1rem; }
 </style>
 ''', unsafe_allow_html=True)
 
-st.markdown(f"### ✅ {len(filtered_short)} leagues found")
+st.markdown(f"### ✅ {len(df_short)} leagues found")
 
-# Tabella o messaggio
-if not filtered_short.empty:
-    html_table = generate_html_table(filtered_short, tooltip_map)
+if not df_short.empty:
+    html_table = generate_html_table(df_short, tooltip_map)
     st.markdown(html_table, unsafe_allow_html=True)
 else:
     st.warning("No data to display for selected filters.")
 
-# Download CSV
-st.download_button("Download Filtered Data", data=filtered_df.to_csv(index=False), file_name="filtered_betting_matrix.csv")
+st.download_button("Download Filtered Data", data=filtered_df[selected_cols].to_csv(index=False), file_name="filtered_betting_matrix.csv")
 
-# Profilo betting
 if len(filtered_df) == 1 and "Betting Profile" in filtered_df.columns:
     st.subheader("🎯 Betting Profile")
     st.markdown(filtered_df.iloc[0]["Betting Profile"])
