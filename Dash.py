@@ -6,53 +6,52 @@ st.set_page_config(page_title="Global Football Matrix", layout="wide")
 
 df = pd.read_excel("football_betting_matrix_GLOBAL_FULL_ALL_REGIONS.xlsx", sheet_name="League Data")
 
-# Mapping per nome abbreviato -> esteso + colore
-COLUMN_CONFIG = {
-    "Reg": ("Region", "#ffe599"),
-    "Ctry": ("Country", "#ffe599"),
-    "EffT": ("Effective Time", "#d9ead3"),
-    "Style": ("Style of Play", "#d9ead3"),
-    "Frag": ("Game Fragmentation", "#d9ead3"),
-    "EndG": ("End-game Behavior", "#d9ead3"),
-    "Ov2H": ("Over 2nd Half Propensity", "#c9daf8"),
-    "1HSt": ("Strong Start 1H", "#c9daf8"),
-    "Push+": ("Push to Extend Lead", "#c9daf8"),
-    "LCorn": ("Late Corners Tendency", "#c9daf8"),
-    "Notes": ("Notes", "#f4cccc"),
-    "IW": ("Inverted Wingers Usage", "#f4cccc"),
-    "TactX": ("Hidden Tactical Behaviors", "#f4cccc"),
-    "BetP": ("Betting Profile", "#ead1dc")
+# Mapping: abbreviazione -> (nome completo, sezione)
+COLUMN_SECTIONS = {
+    "Region": ("Reg", "Region"),
+    "Country": ("Ctry", "Region"),
+    "Effective Time": ("EffT", "Style"),
+    "Style of Play": ("Style", "Style"),
+    "Game Fragmentation": ("Frag", "Style"),
+    "End-game Behavior": ("EndG", "Style"),
+    "Over 2nd Half Propensity": ("Ov2H", "Final"),
+    "Strong Start 1H": ("1HSt", "Final"),
+    "Push to Extend Lead": ("Push+", "Final"),
+    "Late Corners Tendency": ("LCorn", "Final"),
+    "Notes": ("Notes", "Tactic"),
+    "Inverted Wingers Usage": ("IW", "Tactic"),
+    "Hidden Tactical Behaviors": ("TactX", "Tactic"),
+    "Betting Profile": ("BetP", "Profile")
 }
 
-# Mappo colonne originali su quelle abbreviate solo se esistono
-available_cols = df.columns.tolist()
-abbrev_map = {v[0]: k for k, v in COLUMN_CONFIG.items() if v[0] in available_cols}
-reverse_map = {v: k for k, v in abbrev_map.items()}
+# Ordine e separazione tra sezioni
+SECTION_ORDER = ["Region", "Style", "Final", "Tactic", "Profile"]
+section_columns = {s: [] for s in SECTION_ORDER}
+for full_name, (abbr, section) in COLUMN_SECTIONS.items():
+    if full_name in df.columns:
+        section_columns[section].append((full_name, abbr))
 
-# Ricostruisco DataFrame con colonne abbreviate
-df_short = df.rename(columns=abbrev_map)
-columns = df_short.columns.tolist()
+# Costruzione DataFrame abbreviato + spaziature tra sezioni
+columns_ordered = []
+col_tooltips = {}
+for section in SECTION_ORDER:
+    if section_columns[section]:
+        if columns_ordered:  # se non è la prima sezione, aggiungi colonna vuota separatrice
+            spacer = f"__{section}__"
+            df[spacer] = ""
+            columns_ordered.append(spacer)
+        for full, abbr in section_columns[section]:
+            df[abbr] = df[full]
+            columns_ordered.append(abbr)
+            col_tooltips[abbr] = full
 
-# Selettore colonne con tutte selezionate di default
-selected_cols = st.multiselect("📊 Select columns to display", columns, default=columns)
-
-# Funzione per colorare header e tooltip
-def make_table_html(df, columns):
-    html = "<div style='overflow-x:auto'><table><thead><tr>"
-    for col in columns:
-        full_name = COLUMN_CONFIG.get(col, (col, ""))[0]
-        color = COLUMN_CONFIG.get(col, (None, "#ffffff"))[1]
-        html += f'<th style="background-color:{color}; padding:6px" title="{full_name}">{col}</th>'
-    html += "</tr></thead><tbody>"
-    for _, row in df.iterrows():
-        html += "<tr>"
-        for col in columns:
-            val = row[col]
-            color = COLUMN_CONFIG.get(col, (None, "#ffffff"))[1]
-            html += f'<td style="background-color:{color}; padding:6px">{val}</td>'
-        html += "</tr>"
-    html += "</tbody></table></div>"
-    return html
+# Visualizzazione
+st.title("📊 Global Football Matrix")
+st.caption("Tutte le metriche sono in inglese. Passa il mouse sui nomi per leggere la descrizione.")
 
 # Mostra la tabella
-st.markdown(make_table_html(df_short[selected_cols], selected_cols), unsafe_allow_html=True)
+st.dataframe(df[columns_ordered], use_container_width=True)
+
+# Download
+csv = df[columns_ordered].to_csv(index=False).encode("utf-8")
+st.download_button("📥 Download CSV", data=csv, file_name="football_matrix_filtered.csv", mime="text/csv")
