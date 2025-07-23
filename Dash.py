@@ -20,8 +20,6 @@ if region:
     filtered_df = filtered_df[filtered_df["Region"].isin(region)]
 if country:
     filtered_df = filtered_df[filtered_df["Country"].isin(country)]
-if division:
-    filtered_df = filtered_df[filtered_df["Division"].isin(division)]
 if over2h != "All":
     filtered_df = filtered_df[filtered_df["Over 2nd Half Propensity"] == over2h]
 
