@@ -82,11 +82,6 @@ st.data_editor(
     column_config=col_cfg,
     use_container_width=True,
     hide_index=True
-    df,
-    
-    disabled=True,
-    use_container_width=True,
-    hide_index=True,
 )
 
 # Download
