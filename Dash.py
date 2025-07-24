@@ -52,7 +52,34 @@ if search:
     df = df[df.apply(lambda row: row.astype(str).str.contains(search, case=False).any(), axis=1)]
 
 # Mostra tabella
+
+# Tooltip mapping per abbreviazioni
+TOOLTIPS = {
+    "Reg": "Region",
+    "League": "League name (includes 2nd tiers)",
+    "EffT": "Effective Time (actual minutes of play)",
+    "Style": "Style of Play (direct vs possession)",
+    "Frag": "Game Fragmentation",
+    "EndG": "End-game Behavior",
+    "Ov2H": "Over 2nd Half Propensity",
+    "1HSt": "Strong Start in 1st Half",
+    "Push+": "Push to Extend Lead",
+    "LCorn": "Late Corners Tendency",
+    "Notes": "Tactical notes and quirks",
+    "IW": "Inverted Wingers Usage",
+    "TactX": "Hidden Tactical Behaviors",
+    "BetP": "Betting Profile"
+}
+
+col_cfg = {
+    col: st.column_config.TextColumn(label=col, help=TOOLTIPS.get(col, ""))
+    for col in df.columns if col in TOOLTIPS
+}
+
+
 st.data_editor(
+    df,
+    column_config=col_cfg,
     df,
     
     disabled=True,
