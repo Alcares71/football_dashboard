@@ -60,7 +60,7 @@ col_cfg = {
         label=col,
         help=TOOLTIPS.get(col, "")
     )
-    for col in selected_cols
+    #for col in selected_cols
 }
 
 # Mostra tabella
