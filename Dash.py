@@ -39,12 +39,12 @@ col1, col2 = st.columns(2)
 with col1:
     selected_region = st.multiselect("🌍 Region", sorted(df["Reg"].dropna().unique()), default=None)
 with col2:
-    selected_league = st.multiselect("🏆 League", sorted(df["League"].dropna().unique()), default=None)
+    selected_country = st.multiselect("🇨🇴 Country", sorted(df["Ctry"].dropna().unique()), default=None)
 
 if selected_region:
     df = df[df["Reg"].isin(selected_region)]
-if selected_league:
-    df = df[df["League"].isin(selected_league)]
+if selected_country:
+    df = df[df["Ctry"].isin(selected_country)]
 
 # Ricerca testuale
 search = st.text_input("🔍 Search in table (any column)")
@@ -54,7 +54,7 @@ if search:
 # Mostra tabella
 st.data_editor(
     df,
-    column_config=col_cfg,
+    
     disabled=True,
     use_container_width=True,
     hide_index=True,
