@@ -5,6 +5,7 @@ import pandas as pd
 st.set_page_config(page_title="Football Matrix Tooltip View", layout="wide")
 
 df = pd.read_excel("football_betting_matrix_GLOBAL_FULL_ALL_REGIONS.xlsx", sheet_name="League Data")
+df = df.rename(columns={"Country": "League"})
 
 # Mapping abbreviazioni
 COLUMN_ABBR = {
@@ -50,22 +51,9 @@ search = st.text_input("🔍 Search in table (any column)")
 if search:
     df = df[df.apply(lambda row: row.astype(str).str.contains(search, case=False).any(), axis=1)]
 
-# Selezione colonne
-available_cols = df.columns.tolist()
-selected_cols = st.multiselect("📌 Columns to display", available_cols, default=available_cols)
-
-# Configura tooltip
-col_cfg = {
-    col: st.column_config.TextColumn(
-        label=col,
-        help=TOOLTIPS.get(col, "")
-    )
-    for col in selected_cols
-}
-
 # Mostra tabella
 st.data_editor(
-    df[selected_cols],
+    df,
     column_config=col_cfg,
     disabled=True,
     use_container_width=True,
@@ -73,5 +61,5 @@ st.data_editor(
 )
 
 # Download
-csv = df[selected_cols].to_csv(index=False).encode("utf-8")
+csv = df.to_csv(index=False).encode("utf-8")
 st.download_button("⬇️ Download CSV", data=csv, file_name="football_matrix_filtered.csv", mime="text/csv")
