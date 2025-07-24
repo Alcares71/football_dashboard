@@ -80,6 +80,8 @@ col_cfg = {
 st.data_editor(
     df,
     column_config=col_cfg,
+    use_container_width=True,
+    hide_index=True
     df,
     
     disabled=True,
