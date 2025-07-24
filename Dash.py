@@ -52,7 +52,7 @@ if search:
 
 # Selezione colonne
 available_cols = df.columns.tolist()
-#selected_cols = st.multiselect("📌 Columns to display", available_cols, default=available_cols)
+selected_cols = st.multiselect("📌 Columns to display", available_cols, default=available_cols)
 
 # Configura tooltip
 col_cfg = {
