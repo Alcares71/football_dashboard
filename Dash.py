@@ -43,7 +43,7 @@ with col2:
 
 if selected_region:
     df = df[df["Reg"].isin(selected_region)]
-if selected_league
+if selected_league:
     df = df[df["League"].isin(selected_league)]
 
 # Ricerca testuale
